@@ -5,6 +5,8 @@
   "author": "",
   "browser": "src/app.tsx",
   "scripts": {
+    "predev": "bash scripts/get-openscad.sh",
+    "prebuild": "bash scripts/get-openscad.sh",
     "build": "node esbuild.mjs",
     "corsproxy": "scripts/cors-proxy.js",
     "dev": "CORSPROXY=http://localhost:8888/ node esbuild.mjs --serve --watch --cors-proxy",

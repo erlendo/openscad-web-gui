@@ -20,10 +20,16 @@ build an editor for OpenSCAD that is capable of loading `.scad` files from other
 ```bash
 git clone https://github.com/seasick/openscad-web-gui
 npm i
-npm run dev # Run a webserver and rebuild on file changes
+npm run dev # Runs a local server and rebuilds on changes
 # npm run lint
 # npm run test
 ```
+
+Notes
+
+- The dev/build scripts automatically fetch the OpenSCAD WASM bundle into `src/vendor/openscad-wasm/`.
+- If the download fails (e.g. no curl/wget), run it manually:
+  - bash scripts/get-openscad.sh
 
 # Credit
 

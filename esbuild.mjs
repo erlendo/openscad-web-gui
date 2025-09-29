@@ -39,5 +39,5 @@ if (process.argv?.length > 2) {
   }
 } else {
   await esbuild.build(appBuildConfig(appOptions));
-  await esbuild.build(workerBuildConfig(workerBuildConfig));
+  await esbuild.build(workerBuildConfig(workerOptions));
 }
