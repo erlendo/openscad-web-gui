@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { Slider } from "@mui/material";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Box, Sphere, Cylinder } from "@react-three/drei";
 
@@ -7,6 +8,7 @@ type ObjectType = "box" | "sphere" | "cylinder";
 type SceneObject = {
   type: ObjectType;
   position: [number, number, number];
+  scale: number;
   color?: string;
 };
 
@@ -18,7 +20,7 @@ const defaultColors: Record<ObjectType, string> = {
 
 export default function ObjectEditor() {
   const [objects, setObjects] = useState<SceneObject[]>([
-    { type: "box", position: [0, 0, 0], color: defaultColors.box },
+    { type: "box", position: [0, 0, 0], scale: 1, color: defaultColors.box },
   ]);
   const [dragged, setDragged] = useState<number | null>(null);
 
@@ -28,9 +30,15 @@ export default function ObjectEditor() {
       {
         type,
         position: [Math.random() * 2 - 1, 0, Math.random() * 2 - 1],
+        scale: 1,
         color: defaultColors[type],
       },
     ]);
+  }
+  function handleScaleChange(idx: number, value: number) {
+    setObjects((objs) =>
+      objs.map((obj, i) => (i === idx ? { ...obj, scale: value } : obj))
+    );
   }
 
   function handlePointerDown(idx: number) {
@@ -39,7 +47,7 @@ export default function ObjectEditor() {
   function handlePointerUp() {
     setDragged(null);
   }
-  function handlePointerMove(e: any, idx: number) {
+  function handlePointerMove(e: { point: { toArray: () => number[] } }, idx: number) {
     if (dragged === idx) {
       // Flytt objektet i XZ-plan
       const [x, , z] = e.point.toArray();
@@ -51,12 +59,68 @@ export default function ObjectEditor() {
     }
   }
 
+  // STL-eksport
+  async function exportSTL() {
+    const { STLExporter } = await import('three/examples/jsm/exporters/STLExporter');
+    const THREE = await import('three');
+    const exporter = new STLExporter();
+    const scene = new THREE.Scene();
+    objects.forEach((obj) => {
+      let mesh;
+      if (obj.type === "box") {
+        mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(obj.scale, obj.scale, obj.scale),
+          new THREE.MeshStandardMaterial({ color: obj.color })
+        );
+      } else if (obj.type === "sphere") {
+        mesh = new THREE.Mesh(
+          new THREE.SphereGeometry(0.7 * obj.scale, 32, 32),
+          new THREE.MeshStandardMaterial({ color: obj.color })
+        );
+      } else if (obj.type === "cylinder") {
+        mesh = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.5 * obj.scale, 0.5 * obj.scale, 1.5 * obj.scale, 32),
+          new THREE.MeshStandardMaterial({ color: obj.color })
+        );
+      }
+      if (mesh) {
+        mesh.position.set(...obj.position);
+        scene.add(mesh);
+      }
+    });
+    const stl = exporter.parse(scene);
+    const blob = new Blob([stl], { type: 'application/sla' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'scene.stl';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div style={{ width: "100%", height: 400 }}>
       <div style={{ marginBottom: 8 }}>
         <button onClick={() => addObject("box")}>Legg til kube</button>
         <button onClick={() => addObject("sphere")}>Legg til sfære</button>
         <button onClick={() => addObject("cylinder")}>Legg til sylinder</button>
+        <button onClick={exportSTL}>Eksporter STL</button>
+      </div>
+      <div style={{ marginBottom: 8 }}>
+        {objects.map((obj, i) => (
+          <div key={i} style={{ marginBottom: 4 }}>
+            <span>{obj.type} #{i + 1} størrelse:</span>
+            <Slider
+              value={obj.scale}
+              min={0.2}
+              max={3}
+              step={0.01}
+              onChange={(_, value) => handleScaleChange(i, value as number)}
+              style={{ width: 120, display: 'inline-block', marginLeft: 8 }}
+            />
+            <span style={{ marginLeft: 8 }}>{obj.scale.toFixed(2)}</span>
+          </div>
+        ))}
       </div>
       <Canvas shadows camera={{ position: [5, 5, 5], fov: 50 }}>
         <ambientLight />
@@ -64,9 +128,10 @@ export default function ObjectEditor() {
         {objects.map((obj, i) => {
           const commonProps = {
             position: obj.position as [number, number, number],
+            scale: [obj.scale, obj.scale, obj.scale] as [number, number, number],
             onPointerDown: () => handlePointerDown(i),
             onPointerUp: handlePointerUp,
-            onPointerMove: (e: any) => handlePointerMove(e, i),
+            onPointerMove: (e: { point: { toArray: () => number[] } }) => handlePointerMove(e, i),
             castShadow: true,
             receiveShadow: true,
             style: { cursor: dragged === i ? "grabbing" : "grab" },

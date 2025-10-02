@@ -1,4 +1,5 @@
 import CodeIcon from '@mui/icons-material/Code';
+import BuildIcon from '@mui/icons-material/Build';
 import FolderIcon from '@mui/icons-material/Folder';
 import FontDownloadIcon from '@mui/icons-material/FontDownload';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
@@ -28,6 +29,7 @@ export default function Sidebar({ onChange, mode }: Props) {
   const buttons = [
     { value: 'editor', icon: <CodeIcon />, label: 'Script Editor' },
     { value: 'customizer', icon: <TuneIcon />, label: 'Customizer' },
+    { value: 'objecteditor', icon: <BuildIcon />, label: '3D Editor' },
     { value: 'file', icon: <FolderIcon />, label: 'File Manager' },
     { value: 'libraries', icon: <LibraryBooksIcon />, label: 'Libraries' },
     { value: 'fonts', icon: <FontDownloadIcon />, label: 'Fonts' },

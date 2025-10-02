@@ -12,6 +12,7 @@ import FileSystem from './Workspace/FileSystem';
 import Fonts from './Workspace/Fonts';
 import Libraries from './Workspace/Libraries';
 import Preview from './Workspace/Preview';
+import ObjectEditor from './ObjectEditor';
 import Sidebar from './Workspace/Sidebar';
 import { useOpenSCADProvider } from './providers/OpenscadWorkerProvider';
 import { useWorkspaceProvider } from './providers/WorkspaceProvider';
@@ -19,6 +20,7 @@ import { useWorkspaceProvider } from './providers/WorkspaceProvider';
 export type EditorMode =
   | 'editor'
   | 'customizer'
+  | 'objecteditor'
   | 'file'
   | 'libraries'
   | 'fonts';
@@ -82,6 +84,7 @@ export default function Workspace({ initialMode }: Props) {
             />
           )}
           {mode === 'editor' && <CodeEditor />}
+          {mode === 'objecteditor' && <ObjectEditor />}
           {mode === 'file' && <FileSystem />}
           {mode === 'libraries' && <Libraries />}
           {mode === 'fonts' && <Fonts />}
