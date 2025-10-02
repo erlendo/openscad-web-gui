@@ -1,5 +1,27 @@
 
 import React, { useState } from "react";
+import { useWorkspaceProvider } from "./providers/WorkspaceProvider";
+  // WorkspaceProvider for å oppdatere script-editoren
+  const { setCode } = useWorkspaceProvider();
+  // Generer OpenSCAD-kode fra scene-objekter
+  function generateOpenSCAD(objects: SceneObject[]): string {
+    return objects.map(obj => {
+      if (obj.type === "box") {
+        return `cube([${(obj.scale).toFixed(2)}, ${(obj.scale).toFixed(2)}, ${(obj.scale).toFixed(2)}]);`;
+      }
+      if (obj.type === "sphere") {
+        return `sphere(r=${(0.7 * obj.scale).toFixed(2)});`;
+      }
+      if (obj.type === "cylinder") {
+        return `cylinder(r=${(0.5 * obj.scale).toFixed(2)}, h=${(1.5 * obj.scale).toFixed(2)});`;
+      }
+      return "";
+    }).join("\n");
+  }
+
+  function syncToScriptEditor() {
+    setCode(generateOpenSCAD(objects));
+  }
 import { Slider } from "@mui/material";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Box, Sphere, Cylinder } from "@react-three/drei";
@@ -13,7 +35,7 @@ type SceneObject = {
 };
 
 const defaultColors: Record<ObjectType, string> = {
-  box: "orange",
+  box: "blue",
   sphere: "skyblue",
   cylinder: "lightgreen",
 };
@@ -105,6 +127,7 @@ export default function ObjectEditor() {
         <button onClick={() => addObject("sphere")}>Legg til sfære</button>
         <button onClick={() => addObject("cylinder")}>Legg til sylinder</button>
         <button onClick={exportSTL}>Eksporter STL</button>
+        <button onClick={syncToScriptEditor} style={{ marginLeft: 16 }}>Synkroniser til script-editor</button>
       </div>
       <div style={{ marginBottom: 8 }}>
         {objects.map((obj, i) => (
