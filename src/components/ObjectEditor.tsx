@@ -6,7 +6,7 @@ import React, { useState } from "react";
 import { useWorkspaceProvider } from "./providers/WorkspaceProvider";
 import { Slider } from "@mui/material";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Box, Sphere, Cylinder } from "@react-three/drei";
+import { OrbitControls, Box, Sphere, Cylinder, Grid } from "@react-three/drei";
 
 type ObjectType = "box" | "sphere" | "cylinder";
 type SceneObject = {
@@ -150,6 +150,8 @@ export default function ObjectEditor() {
       <Canvas shadows camera={{ position: [5, 5, 5], fov: 50 }}>
         <ambientLight />
         <OrbitControls />
+        {/* Grid i bakgrunnen */}
+        <Grid infiniteGrid={true} sectionColor="#CCCCCC" />
         {objects.map((obj, i) => {
           const commonProps = {
             position: obj.position as [number, number, number],
