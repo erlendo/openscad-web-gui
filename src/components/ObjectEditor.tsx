@@ -1,5 +1,3 @@
-
-
 // Ryddet: kun én versjon av ObjectEditor, type-definisjoner og imports
 
 import React, { useState } from "react";
@@ -27,19 +25,29 @@ export default function ObjectEditor() {
     { type: "box", position: [0, 0, 0], scale: 1, color: defaultColors.box },
   ]);
   const [dragged, setDragged] = useState<number | null>(null);
+  const [unit, setUnit] = useState<'mm' | 'cm' | 'm'>('mm');
   const { setCode } = useWorkspaceProvider();
+
+  // Skala-faktor basert på valgt enhet
+  function getUnitFactor() {
+    if (unit === 'mm') return 1;
+    if (unit === 'cm') return 10;
+    if (unit === 'm') return 1000;
+    return 1;
+  }
 
   // Generer OpenSCAD-kode fra scene-objekter
   function generateOpenSCAD(objects: SceneObject[]): string {
+    const factor = getUnitFactor();
     return objects.map(obj => {
       if (obj.type === "box") {
-        return `cube([${(obj.scale).toFixed(2)}, ${(obj.scale).toFixed(2)}, ${(obj.scale).toFixed(2)}]);`;
+        return `cube([${(obj.scale * factor).toFixed(2)}, ${(obj.scale * factor).toFixed(2)}, ${(obj.scale * factor).toFixed(2)}]);`;
       }
       if (obj.type === "sphere") {
-        return `sphere(r=${(0.7 * obj.scale).toFixed(2)});`;
+        return `sphere(r=${(0.7 * obj.scale * factor).toFixed(2)});`;
       }
       if (obj.type === "cylinder") {
-        return `cylinder(r=${(0.5 * obj.scale).toFixed(2)}, h=${(1.5 * obj.scale).toFixed(2)});`;
+        return `cylinder(r=${(0.5 * obj.scale * factor).toFixed(2)}, h=${(1.5 * obj.scale * factor).toFixed(2)});`;
       }
       return "";
     }).join("\n");
@@ -53,7 +61,7 @@ export default function ObjectEditor() {
       ...objs,
       {
         type,
-        position: [Math.random() * 2 - 1, 0, Math.random() * 2 - 1],
+        position: [0, 0, 0], // Start alltid i origo
         scale: 1,
         color: defaultColors[type],
       },
@@ -89,21 +97,22 @@ export default function ObjectEditor() {
     const THREE = await import('three');
     const exporter = new STLExporter();
     const scene = new THREE.Scene();
+    const factor = getUnitFactor();
     objects.forEach((obj) => {
       let mesh;
       if (obj.type === "box") {
         mesh = new THREE.Mesh(
-          new THREE.BoxGeometry(obj.scale, obj.scale, obj.scale),
+          new THREE.BoxGeometry(obj.scale * factor, obj.scale * factor, obj.scale * factor),
           new THREE.MeshStandardMaterial({ color: obj.color })
         );
       } else if (obj.type === "sphere") {
         mesh = new THREE.Mesh(
-          new THREE.SphereGeometry(0.7 * obj.scale, 32, 32),
+          new THREE.SphereGeometry(0.7 * obj.scale * factor, 32, 32),
           new THREE.MeshStandardMaterial({ color: obj.color })
         );
       } else if (obj.type === "cylinder") {
         mesh = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.5 * obj.scale, 0.5 * obj.scale, 1.5 * obj.scale, 32),
+          new THREE.CylinderGeometry(0.5 * obj.scale * factor, 0.5 * obj.scale * factor, 1.5 * obj.scale * factor, 32),
           new THREE.MeshStandardMaterial({ color: obj.color })
         );
       }
@@ -125,6 +134,12 @@ export default function ObjectEditor() {
   return (
     <div style={{ width: "100%", height: 400 }}>
       <div style={{ marginBottom: 8 }}>
+        <label style={{ marginRight: 8 }}>Enhet:</label>
+        <select value={unit} onChange={e => setUnit(e.target.value as 'mm' | 'cm' | 'm')}>
+          <option value="mm">mm</option>
+          <option value="cm">cm</option>
+          <option value="m">m</option>
+        </select>
         <button onClick={() => addObject("box")}>Legg til kube</button>
         <button onClick={() => addObject("sphere")}>Legg til sfære</button>
         <button onClick={() => addObject("cylinder")}>Legg til sylinder</button>
@@ -134,7 +149,7 @@ export default function ObjectEditor() {
       <div style={{ marginBottom: 8 }}>
         {objects.map((obj, i) => (
           <div key={i} style={{ marginBottom: 4 }}>
-            <span>{obj.type} #{i + 1} størrelse:</span>
+            <span>{obj.type} #{i + 1} størrelse ({unit}):</span>
             <Slider
               value={obj.scale}
               min={0.2}
@@ -143,7 +158,7 @@ export default function ObjectEditor() {
               onChange={(_, value) => handleScaleChange(i, value as number)}
               style={{ width: 120, display: 'inline-block', marginLeft: 8 }}
             />
-            <span style={{ marginLeft: 8 }}>{obj.scale.toFixed(2)}</span>
+            <span style={{ marginLeft: 8 }}>{(obj.scale * getUnitFactor()).toFixed(2)} {unit}</span>
           </div>
         ))}
       </div>
