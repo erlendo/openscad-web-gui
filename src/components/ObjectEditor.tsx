@@ -1,27 +1,9 @@
 
+
+// Ryddet: kun én versjon av ObjectEditor, type-definisjoner og imports
+
 import React, { useState } from "react";
 import { useWorkspaceProvider } from "./providers/WorkspaceProvider";
-  // WorkspaceProvider for å oppdatere script-editoren
-  const { setCode } = useWorkspaceProvider();
-  // Generer OpenSCAD-kode fra scene-objekter
-  function generateOpenSCAD(objects: SceneObject[]): string {
-    return objects.map(obj => {
-      if (obj.type === "box") {
-        return `cube([${(obj.scale).toFixed(2)}, ${(obj.scale).toFixed(2)}, ${(obj.scale).toFixed(2)}]);`;
-      }
-      if (obj.type === "sphere") {
-        return `sphere(r=${(0.7 * obj.scale).toFixed(2)});`;
-      }
-      if (obj.type === "cylinder") {
-        return `cylinder(r=${(0.5 * obj.scale).toFixed(2)}, h=${(1.5 * obj.scale).toFixed(2)});`;
-      }
-      return "";
-    }).join("\n");
-  }
-
-  function syncToScriptEditor() {
-    setCode(generateOpenSCAD(objects));
-  }
 import { Slider } from "@mui/material";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Box, Sphere, Cylinder } from "@react-three/drei";
@@ -45,7 +27,27 @@ export default function ObjectEditor() {
     { type: "box", position: [0, 0, 0], scale: 1, color: defaultColors.box },
   ]);
   const [dragged, setDragged] = useState<number | null>(null);
+  const { setCode } = useWorkspaceProvider();
 
+  // Generer OpenSCAD-kode fra scene-objekter
+  function generateOpenSCAD(objects: SceneObject[]): string {
+    return objects.map(obj => {
+      if (obj.type === "box") {
+        return `cube([${(obj.scale).toFixed(2)}, ${(obj.scale).toFixed(2)}, ${(obj.scale).toFixed(2)}]);`;
+      }
+      if (obj.type === "sphere") {
+        return `sphere(r=${(0.7 * obj.scale).toFixed(2)});`;
+      }
+      if (obj.type === "cylinder") {
+        return `cylinder(r=${(0.5 * obj.scale).toFixed(2)}, h=${(1.5 * obj.scale).toFixed(2)});`;
+      }
+      return "";
+    }).join("\n");
+  }
+
+  function syncToScriptEditor() {
+    setCode(generateOpenSCAD(objects));
+  }
   function addObject(type: ObjectType) {
     setObjects((objs) => [
       ...objs,
@@ -83,7 +85,7 @@ export default function ObjectEditor() {
 
   // STL-eksport
   async function exportSTL() {
-  const { STLExporter } = await import('three/examples/jsm/exporters/STLExporter.js');
+    const { STLExporter } = await import('three/examples/jsm/exporters/STLExporter.js');
     const THREE = await import('three');
     const exporter = new STLExporter();
     const scene = new THREE.Scene();
