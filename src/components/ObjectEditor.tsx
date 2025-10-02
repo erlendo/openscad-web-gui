@@ -26,6 +26,8 @@ export default function ObjectEditor() {
   ]);
   const [dragged, setDragged] = useState<number | null>(null);
   const [unit, setUnit] = useState<'mm' | 'cm' | 'm'>('mm');
+  const [wallThickness, setWallThickness] = useState<number>(0.2);
+  const [resolution, setResolution] = useState<number>(32); // Oppløsning for sphere/cylinder
   const { setCode } = useWorkspaceProvider();
 
   // Skala-faktor basert på valgt enhet
@@ -41,13 +43,23 @@ export default function ObjectEditor() {
     const factor = getUnitFactor();
     return objects.map(obj => {
       if (obj.type === "box") {
-        return `cube([${(obj.scale * factor).toFixed(2)}, ${(obj.scale * factor).toFixed(2)}, ${(obj.scale * factor).toFixed(2)}]);`;
+        return `difference() {
+  cube([${(obj.scale * factor).toFixed(2)}, ${(obj.scale * factor).toFixed(2)}, ${(obj.scale * factor).toFixed(2)}]);
+  translate([${wallThickness * factor}, ${wallThickness * factor}, ${wallThickness * factor}])
+    cube([${((obj.scale - wallThickness * 2) * factor).toFixed(2)}, ${((obj.scale - wallThickness * 2) * factor).toFixed(2)}, ${((obj.scale - wallThickness * 2) * factor).toFixed(2)}]);
+}`;
       }
       if (obj.type === "sphere") {
-        return `sphere(r=${(0.7 * obj.scale * factor).toFixed(2)});`;
+        return `difference() {
+  sphere(r=${(0.7 * obj.scale * factor).toFixed(2)}, $fn=${resolution});
+  sphere(r=${(0.7 * obj.scale * factor - wallThickness * factor).toFixed(2)}, $fn=${resolution});
+}`;
       }
       if (obj.type === "cylinder") {
-        return `cylinder(r=${(0.5 * obj.scale * factor).toFixed(2)}, h=${(1.5 * obj.scale * factor).toFixed(2)});`;
+        return `difference() {
+  cylinder(r=${(0.5 * obj.scale * factor).toFixed(2)}, h=${(1.5 * obj.scale * factor).toFixed(2)}, $fn=${resolution});
+  cylinder(r=${(0.5 * obj.scale * factor - wallThickness * factor).toFixed(2)}, h=${(1.5 * obj.scale * factor).toFixed(2)}, $fn=${resolution});
+}`;
       }
       return "";
     }).join("\n");
@@ -140,6 +152,11 @@ export default function ObjectEditor() {
           <option value="cm">cm</option>
           <option value="m">m</option>
         </select>
+        <label style={{ marginLeft: 16, marginRight: 8 }}>Veggtykkelse:</label>
+        <input type="number" min={0.01} step={0.01} value={wallThickness} onChange={e => setWallThickness(Number(e.target.value))} style={{ width: 60 }} />
+        <span style={{ marginLeft: 4 }}>{unit}</span>
+        <label style={{ marginLeft: 16, marginRight: 8 }}>Oppløsning:</label>
+        <input type="number" min={4} max={128} step={1} value={resolution} onChange={e => setResolution(Number(e.target.value))} style={{ width: 60 }} />
         <button onClick={() => addObject("box")}>Legg til kube</button>
         <button onClick={() => addObject("sphere")}>Legg til sfære</button>
         <button onClick={() => addObject("cylinder")}>Legg til sylinder</button>
