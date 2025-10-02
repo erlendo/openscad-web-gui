@@ -24,8 +24,14 @@ download() {
 }
 
 echo "Fetching OpenSCAD WASM assets ($OPENSCAD_WASM_VERSION)…"
-download "$BASE_URL/openscad.js" "$VENDOR_DIR/openscad.js"
-download "$BASE_URL/openscad.wasm" "$VENDOR_DIR/openscad.wasm"
+
+# Hopp over nedlasting hvis filene allerede finnes
+if [ -f "$VENDOR_DIR/openscad.js" ] && [ -f "$VENDOR_DIR/openscad.wasm" ]; then
+	echo "OpenSCAD WASM assets already present, skipping download."
+else
+	download "$BASE_URL/openscad.js" "$VENDOR_DIR/openscad.js"
+	download "$BASE_URL/openscad.wasm" "$VENDOR_DIR/openscad.wasm"
+fi
 
 # Optional companion files if present in the release
 if curl -fsI "$BASE_URL/openscad.wasm.js" >/dev/null 2>&1; then
