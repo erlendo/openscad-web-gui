@@ -61,7 +61,7 @@ export default function ObjectEditor() {
 
   // STL-eksport
   async function exportSTL() {
-    const { STLExporter } = await import('three/examples/jsm/exporters/STLExporter');
+  const { STLExporter } = await import('three/examples/jsm/exporters/STLExporter.js');
     const THREE = await import('three');
     const exporter = new STLExporter();
     const scene = new THREE.Scene();
