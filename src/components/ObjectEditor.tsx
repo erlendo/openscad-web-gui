@@ -1,6 +1,7 @@
 // Ryddet: kun én versjon av ObjectEditor, type-definisjoner og imports
 
 import React, { useState } from "react";
+import { parseOpenSCADScene, ParsedObject } from '../lib/parseOpenSCADScene';
 import { useWorkspaceProvider } from "./providers/WorkspaceProvider";
 import { Slider } from "@mui/material";
 import { Canvas } from "@react-three/fiber";
@@ -27,8 +28,9 @@ export default function ObjectEditor() {
   const [dragged, setDragged] = useState<number | null>(null);
   const [unit, setUnit] = useState<'mm' | 'cm' | 'm'>('mm');
   const [wallThickness, setWallThickness] = useState<number>(0.2);
-  const [resolution, setResolution] = useState<number>(32); // Oppløsning for sphere/cylinder
-  const { setCode } = useWorkspaceProvider();
+  const [resolution, setResolution] = useState<number>(32);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const { code, setCode } = useWorkspaceProvider();
 
   // Skala-faktor basert på valgt enhet
   function getUnitFactor() {
@@ -83,6 +85,28 @@ export default function ObjectEditor() {
     setObjects((objs) =>
       objs.map((obj, i) => (i === idx ? { ...obj, scale: value } : obj))
     );
+  }
+
+  function handleSelect(idx: number) {
+    setSelectedIndex(idx);
+  }
+  function handleSelectedScaleChange(value: number) {
+    if (selectedIndex !== null) {
+      setObjects((objs) =>
+        objs.map((obj, i) => (i === selectedIndex ? { ...obj, scale: value } : obj))
+      );
+    }
+  }
+  function handleSelectedPositionChange(axis: 'x' | 'y' | 'z', value: number) {
+    if (selectedIndex !== null) {
+      setObjects((objs) =>
+        objs.map((obj, i) =>
+          i === selectedIndex
+            ? { ...obj, position: obj.position.map((v, idx) => idx === (axis === 'x' ? 0 : axis === 'y' ? 1 : 2) ? value : v) as [number, number, number] }
+            : obj
+        )
+      );
+    }
   }
 
   function handlePointerDown(idx: number) {
@@ -143,6 +167,21 @@ export default function ObjectEditor() {
     URL.revokeObjectURL(url);
   }
 
+  // Sync fra script-editor til 3D-editor
+  React.useEffect(() => {
+    if (code) {
+      const parsed = parseOpenSCADScene(code);
+      if (parsed.length) {
+        setObjects(parsed.map(obj => ({
+          type: obj.type,
+          scale: obj.scale,
+          position: obj.position,
+          color: defaultColors[obj.type],
+        })));
+      }
+    }
+  }, [code]);
+
   return (
     <div style={{ width: "100%", height: 400 }}>
       <div style={{ marginBottom: 8 }}>
@@ -165,7 +204,7 @@ export default function ObjectEditor() {
       </div>
       <div style={{ marginBottom: 8 }}>
         {objects.map((obj, i) => (
-          <div key={i} style={{ marginBottom: 4 }}>
+          <div key={i} style={{ marginBottom: 4, background: selectedIndex === i ? '#e0f7fa' : undefined }}>
             <span>{obj.type} #{i + 1} størrelse ({unit}):</span>
             <Slider
               value={obj.scale}
@@ -176,9 +215,27 @@ export default function ObjectEditor() {
               style={{ width: 120, display: 'inline-block', marginLeft: 8 }}
             />
             <span style={{ marginLeft: 8 }}>{(obj.scale * getUnitFactor()).toFixed(2)} {unit}</span>
+            <button style={{ marginLeft: 8 }} onClick={() => handleSelect(i)}>{selectedIndex === i ? 'Valgt' : 'Velg'}</button>
           </div>
         ))}
       </div>
+      {selectedIndex !== null && (
+        <div style={{ marginBottom: 8, padding: 8, background: '#f1f8e9', borderRadius: 4 }}>
+          <b>Juster valgt objekt:</b>
+          <div style={{ marginTop: 4 }}>
+            <label>Størrelse:</label>
+            <input type="number" min={0.2} max={3} step={0.01} value={objects[selectedIndex].scale} onChange={e => handleSelectedScaleChange(Number(e.target.value))} style={{ width: 60, marginLeft: 8 }} />
+          </div>
+          <div style={{ marginTop: 4 }}>
+            <label>Posisjon X:</label>
+            <input type="number" step={0.01} value={objects[selectedIndex].position[0]} onChange={e => handleSelectedPositionChange('x', Number(e.target.value))} style={{ width: 60, marginLeft: 8 }} />
+            <label style={{ marginLeft: 8 }}>Y:</label>
+            <input type="number" step={0.01} value={objects[selectedIndex].position[1]} onChange={e => handleSelectedPositionChange('y', Number(e.target.value))} style={{ width: 60, marginLeft: 8 }} />
+            <label style={{ marginLeft: 8 }}>Z:</label>
+            <input type="number" step={0.01} value={objects[selectedIndex].position[2]} onChange={e => handleSelectedPositionChange('z', Number(e.target.value))} style={{ width: 60, marginLeft: 8 }} />
+          </div>
+        </div>
+      )}
       <Canvas shadows camera={{ position: [5, 5, 5], fov: 50 }}>
         <ambientLight />
         <OrbitControls />
@@ -195,22 +252,23 @@ export default function ObjectEditor() {
             receiveShadow: true,
             style: { cursor: dragged === i ? "grabbing" : "grab" },
           };
+          const materialProps = { color: obj.color, opacity: 0.5, transparent: true };
           if (obj.type === "box")
             return (
               <Box key={i} args={[1, 1, 1]} {...commonProps}>
-                <meshStandardMaterial color={obj.color} />
+                <meshStandardMaterial {...materialProps} />
               </Box>
             );
           if (obj.type === "sphere")
             return (
               <Sphere key={i} args={[0.7, 32, 32]} {...commonProps}>
-                <meshStandardMaterial color={obj.color || "skyblue"} />
+                <meshStandardMaterial {...materialProps} />
               </Sphere>
             );
           if (obj.type === "cylinder")
             return (
               <Cylinder key={i} args={[0.5, 0.5, 1.5, 32]} {...commonProps}>
-                <meshStandardMaterial color={obj.color || "lightgreen"} />
+                <meshStandardMaterial {...materialProps} />
               </Cylinder>
             );
           return null;
